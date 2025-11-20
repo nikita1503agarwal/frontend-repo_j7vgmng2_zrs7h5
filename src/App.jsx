@@ -1,71 +1,80 @@
+import { useEffect, useState } from 'react'
+import Hero from './components/Hero'
+import ConsultationForm from './components/ConsultationForm'
+import Chat from './components/Chat'
+
 function App() {
+  const [current, setCurrent] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [consultations, setConsultations] = useState([])
+  const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
+  const loadConsultations = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${backend}/api/consultations`)
+      const data = await res.json()
+      setConsultations(data)
+      if (!current && data.length) setCurrent(data[0])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadConsultations()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const onCreated = (c) => {
+    setCurrent(c)
+    loadConsultations()
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Subtle pattern overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]"></div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      <Hero />
 
-      <div className="relative min-h-screen flex items-center justify-center p-8">
-        <div className="max-w-2xl w-full">
-          {/* Header with Flames icon */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center mb-6">
-              <img
-                src="/flame-icon.svg"
-                alt="Flames"
-                className="w-24 h-24 drop-shadow-[0_0_25px_rgba(59,130,246,0.5)]"
-              />
-            </div>
-
-            <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
-              Flames Blue
-            </h1>
-
-            <p className="text-xl text-blue-200 mb-6">
-              Build applications through conversation
-            </p>
+      <main className="relative z-10 max-w-6xl mx-auto px-6 -mt-16 pb-24">
+        <div className="grid md:grid-cols-5 gap-6">
+          <div className="md:col-span-3 space-y-6">
+            <ConsultationForm onCreated={onCreated} />
+            {current ? (
+              <Chat consultation={current} />
+            ) : (
+              <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-blue-100/90">
+                Start a consultation to begin chatting with your AI business consultant.
+              </div>
+            )}
           </div>
 
-          {/* Instructions */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-8 shadow-xl mb-6">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                1
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Describe your idea</h3>
-                <p className="text-blue-200/80 text-sm">Use the chat panel on the left to tell the AI what you want to build</p>
-              </div>
-            </div>
+          <aside className="md:col-span-2 bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
+            <h3 className="text-white font-semibold mb-2">Recent consultations</h3>
+            {loading ? (
+              <p className="text-blue-200/70">Loading...</p>
+            ) : consultations.length ? (
+              <ul className="space-y-2">
+                {consultations.map((c) => (
+                  <li key={c.id}>
+                    <button onClick={() => setCurrent(c)} className={`w-full text-left px-3 py-2 rounded-md transition ${current?.id === c.id ? 'bg-blue-500/20 text-white' : 'text-blue-100/90 hover:bg-white/10'}`}>
+                      <div className="font-medium">{c.business_name}</div>
+                      <div className="text-xs opacity-70">{c.industry} • {c.stage}</div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-blue-200/70">No consultations yet</p>
+            )}
 
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                2
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Watch it build</h3>
-                <p className="text-blue-200/80 text-sm">Your app will appear in this preview as the AI generates the code</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                3
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Refine and iterate</h3>
-                <p className="text-blue-200/80 text-sm">Continue the conversation to add features and make changes</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center">
-            <p className="text-sm text-blue-300/60">
-              No coding required • Just describe what you want
-            </p>
-          </div>
+            <a href="/test" className="inline-block mt-6 text-sm text-blue-300 hover:text-blue-200 underline">Connection test</a>
+          </aside>
         </div>
-      </div>
+      </main>
+
+      <footer className="relative z-10 py-10 text-center text-blue-300/60 text-sm">
+        Built with an AI-first workflow. Describe your goals, get a plan, and iterate fast.
+      </footer>
     </div>
   )
 }
